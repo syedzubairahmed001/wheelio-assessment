@@ -20,12 +20,12 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 
+import useUserStore from "@/store/main";
 import Auth from "./auth";
 
 export default function Nav() {
-  const user = localStorage.getItem("user");
-  if (!user) {
-  }
+  const user = useUserStore((state: any) => state.user);
+
   return (
     <header className="sticky top-0 z-50 w-full bg-background shadow">
       <div className="container flex items-center justify-between h-16 px-4 mx-auto md:px-6">
@@ -59,7 +59,7 @@ export default function Nav() {
                       </Label>
                       <Input
                         id="name"
-                        value="John Doe"
+                        value={user?.username}
                         className="col-span-3"
                         disabled
                       />
@@ -70,7 +70,7 @@ export default function Nav() {
                       </Label>
                       <Input
                         id="username"
-                        value="@johndoe"
+                        value={"@" + user?.username}
                         className="col-span-3"
                         disabled
                       />
@@ -81,7 +81,7 @@ export default function Nav() {
                       </Label>
                       <Input
                         id="email"
-                        value="john@example.com"
+                        value={"@" + user?.email}
                         className="col-span-3"
                         disabled
                       />
@@ -95,6 +95,7 @@ export default function Nav() {
                         rows={2}
                         placeholder="Update your status..."
                         className="col-span-3"
+                        value={user?.status}
                       />
                     </div>
                   </div>

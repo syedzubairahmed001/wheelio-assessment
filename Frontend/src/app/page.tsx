@@ -1,15 +1,62 @@
+"use client";
 
-"use client"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
+import useUserStore from "@/store/main";
+import { socket } from "@/socket";
 
 export default function Component() {
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
-  const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState("explore")
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("explore");
+
+  const fetchAllUsers = useUserStore((state: any) => state.fetchAllUsers);
+  const isAllUsersLoading = useUserStore(
+    (state: any) => state.isAllUsersLoading
+  );
+  const allUsers: any = useUserStore((state: any) => state.allUsers);
+  const currentUser: any = useUserStore((state: any) => state.user);
+
+  useEffect(() => {
+    fetchAllUsers();
+    function onConnect() {
+      if (currentUser?.id) {
+        socket.emit(
+          "register",
+          { ...currentUser },
+          function (dataFromServer: any) {
+            console.log(dataFromServer);
+          }
+        );
+      }
+    }
+    function onDisconnect() {
+      console.log("test");
+    }
+    function onGetFriendReq(value: any) {
+      const fromUser = value?.username;
+      toast(`@${fromUser} just sent you a friend request`);
+    }
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("get_friend_request", onGetFriendReq);
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("get_friend_request", onGetFriendReq);
+    };
+  }, []);
   const [friendRequests, setFriendRequests] = useState([
     {
       name: "Olivia Davis",
@@ -29,47 +76,22 @@ export default function Component() {
       avatar: "/placeholder-user.jpg",
       status: "Away",
     },
-  ])
-  const users = [
-    {
-      name: "Olivia Davis",
-      email: "olivia.davis@example.com",
-      avatar: "/placeholder-user.jpg",
-      status: "Online",
-    },
-    {
-      name: "Liam Nguyen",
-      email: "liam.nguyen@example.com",
-      avatar: "/placeholder-user.jpg",
-      status: "Offline",
-    },
-    {
-      name: "Sophia Hernandez",
-      email: "sophia.hernandez@example.com",
-      avatar: "/placeholder-user.jpg",
-      status: "Away",
-    },
-    {
-      name: "Lucas Gonzalez",
-      email: "lucas.gonzalez@example.com",
-      avatar: "/placeholder-user.jpg",
-      status: "Online",
-    },
-  ]
+  ]);
+
   const handleCardClick = (user: any) => {
-    setSelectedUser(user)
-    setIsModalOpen(true)
-  }
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  };
   const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setSelectedUser(null)
-  }
+    setIsModalOpen(false);
+    setSelectedUser(null);
+  };
   const handleAcceptFriendRequest = (user: any) => {
-    console.log("Accepted friend request for", user.name)
-  }
+    console.log("Accepted friend request for", user.name);
+  };
   const handleRejectFriendRequest = (user: any) => {
-    console.log("Rejected friend request for", user.name)
-  }
+    console.log("Rejected friend request for", user.name);
+  };
   return (
     <div className="flex h-screen flex-col md:flex-row container">
       <div className="bg-card p-4 flex flex-row gap-4 md:flex-col md:w-[200px] lg:w-[240px]">
@@ -101,106 +123,238 @@ export default function Component() {
       <div className="flex-1 p-4 sm:p-8">
         {activeTab === "explore" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-            {users.map((user, index) => (
-              <div
-                key={index}
-                className="bg-card p-4 rounded-lg shadow-md cursor-pointer hover:bg-muted transition-colors"
-                onClick={() => handleCardClick(user)}
-              >
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src="/placeholder-user.jpg" />
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-muted-foreground text-xs">{user.email}</div>
+            {allUsers.map((user: any, index: number) => {
+              if (user.id !== currentUser?.id) {
+                return (
+                  <div
+                    key={index}
+                    className="bg-card p-4 rounded-lg shadow-md cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => handleCardClick(user)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <Avatar>
+                        <AvatarImage src="/placeholder-user.jpg" />
+                        <AvatarFallback>
+                          {user.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">@{user.username}</div>
+                        <div className="text-muted-foreground text-xs">
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              }
+            })}
           </div>
         )}
         {activeTab === "friends" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {users.map((user, index) => (
-              <div
-                key={index}
-                className="bg-card p-4 rounded-lg shadow-md cursor-pointer hover:bg-muted transition-colors"
-                onClick={() => handleCardClick(user)}
-              >
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src="/placeholder-user.jpg" />
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-muted-foreground text-sm">{user.email}</div>
-                    <div className="text-muted-foreground text-sm">Status: {user.status}</div>
+            {allUsers.map((user: any, index: number) => {
+              if (user.id !== currentUser?.id) {
+                return (
+                  <div
+                    key={index}
+                    className="bg-card p-4 rounded-lg shadow-md cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => handleCardClick(user)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <Avatar>
+                        <AvatarImage src="/placeholder-user.jpg" />
+                        <AvatarFallback>
+                          {user.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{user.username}</div>
+                        <div className="text-muted-foreground text-sm">
+                          {user.email}
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          Status: {user.status}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              }
+            })}
           </div>
         )}
         {activeTab === "requests" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {friendRequests.map((user, index) => (
-              <div key={index} className="bg-card p-4 rounded-lg shadow-md">
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src="/placeholder-user.jpg" />
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-muted-foreground text-sm">{user.email}</div>
-                    <div className="text-muted-foreground text-sm">Status: {user.status}</div>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button variant="default" onClick={() => handleAcceptFriendRequest(user)}>
-                    Accept
-                  </Button>
-                  <Button variant="outline" onClick={() => handleRejectFriendRequest(user)}>
-                    Reject
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <FriendRequests friendRequests={friendRequests} />
           </div>
         )}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>User Details</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-6 p-4">
-              <div className="flex items-center gap-4">
-                <Avatar>
-                  <AvatarImage src="/placeholder-user.jpg" />
-                  <AvatarFallback>{selectedUser?.name.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-medium">{selectedUser?.name}</div>
-                  <div className="text-muted-foreground text-sm">{selectedUser?.email}</div>
-                  <div className="text-muted-foreground text-sm">Status: {selectedUser?.status}</div>
-                </div>
-              </div>
-              <Button>Send Friend Request</Button>
-            </div>
-            <div>
-              <Button variant="ghost" className="absolute top-4 right-4">
-                <XIcon className="w-5 h-5" />
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+
+        <UserDetailsDialog
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          selectedUser={selectedUser}
+          currentUser={currentUser}
+        />
       </div>
     </div>
-  )
+  );
 }
+
+const UserDetailsDialog = ({
+  isModalOpen,
+  setIsModalOpen,
+  selectedUser,
+  currentUser,
+}: any) => {
+  const [relationStatus, setRelationStatus] = useState<any>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [buttonText, setButtonText] = useState<string>("Send Friend Request");
+  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
+  useEffect(() => {
+    if (currentUser?.id && selectedUser?.id) {
+      loadFriendRequest();
+    }
+    if (!currentUser) {
+      setButtonText("Join To Request");
+      setButtonDisabled(true);
+    }
+  }, [currentUser, selectedUser]);
+
+  const loadFriendRequest = async () => {
+    setIsLoading(true);
+    try {
+      const frReq = await fetchRelationStatus({
+        fromUserId: currentUser?.id,
+        toUserId: selectedUser?.id,
+      });
+      console.log(frReq);
+      setRelationStatus(frReq);
+    } catch (err) {
+      setButtonText("Send Friend Request");
+      setButtonDisabled(false);
+    }
+    setIsLoading(false);
+  };
+  const fetchSendFriendRequest: any = useUserStore(
+    (state: any) => state.fetchSendFriendRequest
+  );
+  const fetchRelationStatus: any = useUserStore(
+    (state: any) => state.fetchRelationStatus
+  );
+
+  useEffect(() => {
+    if (relationStatus?.relationStatus === "ACCEPTED") {
+      setButtonText("You Are Friends");
+      setButtonDisabled(true);
+    } else if (relationStatus?.relationStatus === "SENT") {
+      setButtonText("Friend Request Sent");
+      setButtonDisabled(true);
+    } else {
+      setButtonText("Send Friend Request");
+      setButtonDisabled(false);
+    }
+  }, [relationStatus]);
+
+  return (
+    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen} modal>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>User Details</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-6 p-3">
+          <div className="flex items-center gap-4">
+            <Avatar>
+              <AvatarImage src="/placeholder-user.jpg" />
+              <AvatarFallback>
+                {selectedUser?.username.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-medium">@{selectedUser?.username}</div>
+              <div className="text-muted-foreground text-sm">
+                {selectedUser?.email}
+              </div>
+              <div className="text-muted-foreground text-sm">
+                Status: {selectedUser?.status}
+              </div>
+            </div>
+          </div>
+          {isLoading ? (
+            <>
+              <div className="w-full h-10 animate-pulse rounded-md bg-slate-300"></div>
+            </>
+          ) : (
+            <Button
+              disabled={buttonDisabled}
+              onClick={async () => {
+                if (currentUser && selectedUser) {
+                  socket.emit(
+                    "send_friend_request",
+                    { from: currentUser.username, toUserId: selectedUser.id },
+                    function (dataFromServer: any) {
+                      console.log(dataFromServer);
+                    }
+                  );
+                }
+                setIsLoading(true);
+                await fetchSendFriendRequest({
+                  toUserId: selectedUser.id,
+                  fromUserId: currentUser?.id,
+                });
+                setButtonText("Friend Request Sent");
+                setButtonDisabled(true);
+                setIsLoading(false);
+              }}
+            >
+              {buttonText}
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const FriendRequests = ({ friendRequests }: any) => {
+  return (
+    <>
+      {friendRequests.map((user: any, index: any) => (
+        <div key={index} className="bg-card p-4 rounded-lg shadow-md">
+          <div className="flex items-center gap-4">
+            <Avatar>
+              <AvatarImage src="/placeholder-user.jpg" />
+              <AvatarFallback>
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-medium">{user.name}</div>
+              <div className="text-muted-foreground text-sm">{user.email}</div>
+              <div className="text-muted-foreground text-sm">
+                Status: {user.status}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="default"
+              // onClick={() => handleAcceptFriendRequest(user)}
+            >
+              Accept
+            </Button>
+            <Button
+              variant="outline"
+              // onClick={() => handleRejectFriendRequest(user)}
+            >
+              Reject
+            </Button>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
 
 function CompassIcon(props: any) {
   return (
@@ -219,9 +373,8 @@ function CompassIcon(props: any) {
       <path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" />
       <circle cx="12" cy="12" r="10" />
     </svg>
-  )
+  );
 }
-
 
 function InboxIcon(props: any) {
   return (
@@ -240,9 +393,8 @@ function InboxIcon(props: any) {
       <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
       <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </svg>
-  )
+  );
 }
-
 
 function UsersIcon(props: any) {
   return (
@@ -263,9 +415,8 @@ function UsersIcon(props: any) {
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
-  )
+  );
 }
-
 
 function XIcon(props: any) {
   return (
@@ -284,5 +435,5 @@ function XIcon(props: any) {
       <path d="M18 6 6 18" />
       <path d="m6 6 12 12" />
     </svg>
-  )
+  );
 }
