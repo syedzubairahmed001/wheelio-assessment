@@ -11,9 +11,15 @@ localUser = localUser ? JSON.parse(localUser) : null;
 const useUserStore = create((set) => ({
   user: localUser,
   allUsers: [],
+  friendRequests: {},
 
   isUserLoading: false,
   isAllUsersLoading: false,
+
+  logout: () => {
+    set((state: any) => ({ user: null }));
+    localStorage.removeItem("user");
+  },
 
   fetchJoinUser: async ({ username, email }: any) => {
     set((state: any) => ({ isUserLoading: true }));
@@ -53,10 +59,28 @@ const useUserStore = create((set) => ({
     return fetchResult.data;
   },
 
-  fetchGetFriendRequests: async ({userId}: any) => {
+  fetchGetFriendRequests: async ({ userId }: any) => {
     const fetchResult = await axios.post(BACKEND_URL + "/friend-request", {
       userId,
     });
+    set((state: any) => ({
+      friendRequests: fetchResult.data,
+    }));
+    return fetchResult.data;
+  },
+  fetchUpdateRelationStatus: async ({
+    fromUserId,
+    toUserId,
+    relationStatus,
+  }: any) => {
+    const fetchResult = await axios.post(
+      BACKEND_URL + "/update-relation-status",
+      {
+        fromUserId,
+        toUserId,
+        relationStatus,
+      }
+    );
     return fetchResult.data;
   },
 }));

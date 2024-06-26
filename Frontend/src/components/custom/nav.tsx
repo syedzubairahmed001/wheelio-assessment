@@ -25,6 +25,7 @@ import Auth from "./auth";
 
 export default function Nav() {
   const user = useUserStore((state: any) => state.user);
+  const logout = useUserStore((state: any) => state.logout);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background shadow">
@@ -36,12 +37,72 @@ export default function Nav() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <BellIcon className="w-6 h-6" />
+                    <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">Notifications</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src="/placeholder-user.jpg" />
+                          <AvatarFallback>JD</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">Jane Doe</div>
+                          <div className="text-sm text-muted-foreground">
+                            Sent you a friend request
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src="/placeholder-user.jpg" />
+                          <AvatarFallback>TU</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">Test user</div>
+                          <div className="text-sm text-muted-foreground">
+                            Updated their status
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src="/placeholder-user.jpg" />
+                          <AvatarFallback>JO</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">Jose</div>
+                          <div className="text-sm text-muted-foreground">
+                            Accepted your friend request
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
                     <Avatar className="w-8 h-8">
                       <AvatarImage src="/placeholder-user.jpg" />
-                      <AvatarFallback>JP</AvatarFallback>
+                      <AvatarFallback>
+                        {user.username?.charAt(0).toUpperCase() +
+                          user.username?.charAt(1).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DialogTrigger>
@@ -104,94 +165,12 @@ export default function Nav() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <BellIcon className="w-6 h-6" />
-                    <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium">Friend Requests</h3>
-                    <Link
-                      href="#"
-                      className="text-sm text-primary"
-                      prefetch={false}
-                    >
-                      See all
-                    </Link>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src="/placeholder-user.jpg" />
-                          <AvatarFallback>JD</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">Jane Doe</div>
-                          <div className="text-sm text-muted-foreground">
-                            Sent you a friend request
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          Accept
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Reject
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src="/placeholder-user.jpg" />
-                          <AvatarFallback>JD</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">John Doe</div>
-                          <div className="text-sm text-muted-foreground">
-                            Sent you a friend request
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          Accept
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Reject
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src="/placeholder-user.jpg" />
-                          <AvatarFallback>JD</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">Jane Smith</div>
-                          <div className="text-sm text-muted-foreground">
-                            Sent you a friend request
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          Accept
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Reject
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+
+              <Button type="submit" variant="outline" onClick={() => {
+                logout()
+              }}>
+                Logout
+              </Button>
             </>
           ) : (
             <Auth />

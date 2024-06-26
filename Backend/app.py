@@ -65,6 +65,10 @@ class UserCollection(BaseModel):
 class UserRelationCollection(BaseModel):
     relations: List[UserRelationsModel]
     users: List[UserModel]
+class UpdateRelationStatusRequestBody(BaseModel):
+    fromUserId: str
+    toUserId: str
+    relationStatus: str
 
 @app.post(
     "/user",
@@ -128,9 +132,11 @@ async def get_friend_request(data: GetFriendRequestBody = Body(...)):
 
     existing_relations = await user_relation_collection.find(
         {"toUserId": data.userId}
-    )
-    userIds = [i["fromUserId"] for i in existing_relations]
-    users = await user_collection.find({"_id": {"$in": userIds}})
+    ).to_list(1000)
+    logger.debug(existing_relations)
+    userIds = [ObjectId(i["fromUserId"]) for i in existing_relations]
+    users = await user_collection.find({"_id": {"$in": userIds}}).to_list(1000)
+    logger.debug(users)
     return UserRelationCollection(relations=existing_relations, users=users)
 
 
@@ -146,6 +152,25 @@ async def get_relation_status(data: RelationStatusRequestBody):
 
     relation = await user_relation_collection.find_one(
         {"fromUserId": data.fromUserId, "toUserId": data.toUserId}
+    )
+    return relation
+
+
+@app.post(
+    "/update-relation-status",
+    response_description="relation-status",
+    response_model=UserRelationsModel,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
+async def update_relation_status(data: UpdateRelationStatusRequestBody):
+
+    relation = await user_relation_collection.find_one_and_update(
+        {"fromUserId": data.fromUserId, "toUserId": data.toUserId},
+        {"$set": {
+            "relationStatus": data.relationStatus
+        }},
+        return_document=ReturnDocument.AFTER,
     )
     return relation
 

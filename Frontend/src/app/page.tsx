@@ -117,7 +117,7 @@ export default function Component() {
           onClick={() => setActiveTab("requests")}
         >
           <InboxIcon className="w-5 h-5" />
-          <span className="hidden md:inline">Incoming Requests</span>
+          <span className="hidden md:inline">Requests</span>
         </Button>
       </div>
       <div className="flex-1 p-4 sm:p-8">
@@ -184,9 +184,12 @@ export default function Component() {
             })}
           </div>
         )}
-        {activeTab === "requests" && (
+        {activeTab === "requests" && currentUser && (
           <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FriendRequests friendRequests={friendRequests} />
+            <FriendRequests
+              friendRequests={friendRequests}
+              currentUser={currentUser}
+            />
           </div>
         )}
 
@@ -316,42 +319,116 @@ const UserDetailsDialog = ({
   );
 };
 
-const FriendRequests = ({ friendRequests }: any) => {
+const FriendRequests = ({ currentUser }: any) => {
+  const fetchGetFriendRequests: any = useUserStore(
+    (state: any) => state.fetchGetFriendRequests
+  );
+  const friendRequests: any = useUserStore(
+    (state: any) => state.friendRequests
+  );
+  const fetchUpdateRelationStatus: any = useUserStore(
+    (state: any) => state.fetchUpdateRelationStatus
+  );
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    const users = await fetchGetFriendRequests({ userId: currentUser?.id });
+    setIsLoading(false);
+  };
+
   return (
     <>
-      {friendRequests.map((user: any, index: any) => (
-        <div key={index} className="bg-card p-4 rounded-lg shadow-md">
-          <div className="flex items-center gap-4">
-            <Avatar>
-              <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback>
-                {user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-medium">{user.name}</div>
-              <div className="text-muted-foreground text-sm">{user.email}</div>
-              <div className="text-muted-foreground text-sm">
-                Status: {user.status}
+      {friendRequests?.users?.map((user: any, index: any) => {
+        let relationStatus = friendRequests?.relations.filter(
+          (e: any) => e.fromUserId === user.id
+        )[0].relationStatus;
+        return (
+          <div key={index} className="bg-card p-4 rounded-lg shadow-md">
+            <div className="flex items-center gap-4">
+              <Avatar>
+                <AvatarImage src="/placeholder-user.jpg" />
+                <AvatarFallback>
+                  {user.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-medium">{user.username}</div>
+                <div className="text-muted-foreground text-sm">
+                  {user.email}
+                </div>
+                <div className="text-muted-foreground text-sm">
+                  Status: {user.status}
+                </div>
               </div>
             </div>
+            <div className="flex gap-2 mt-4">
+              {isLoading && (
+                <Button
+                  variant="default"
+                  disabled
+                  // onClick={() => handleAcceptFriendRequest(user)}
+                >
+                  Loading
+                </Button>
+              )}
+              {relationStatus === "SENT" && !isLoading && (
+                <>
+                  <Button
+                    variant="default"
+                    onClick={async () => {
+                      await fetchUpdateRelationStatus({
+                        fromUserId: user.id,
+                        toUserId: currentUser.id,
+                        relationStatus: "ACCEPTED",
+                      });
+                      await fetchUsers();
+                    }}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      await fetchUpdateRelationStatus({
+                        fromUserId: user.id,
+                        toUserId: currentUser.id,
+                        relationStatus: "REJECTED",
+                      });
+                      await fetchUsers();
+                    }}
+                  >
+                    Reject
+                  </Button>
+                </>
+              )}
+              {relationStatus === "ACCEPTED" && !isLoading && (
+                <Button
+                  variant="outline"
+                  disabled
+                  // onClick={() => handleRejectFriendRequest(user)}
+                >
+                  You accepted
+                </Button>
+              )}
+              {relationStatus === "REJECTED" && !isLoading && (
+                <Button
+                  variant="outline"
+                  disabled
+                  // onClick={() => handleRejectFriendRequest(user)}
+                >
+                  You rejected
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="default"
-              // onClick={() => handleAcceptFriendRequest(user)}
-            >
-              Accept
-            </Button>
-            <Button
-              variant="outline"
-              // onClick={() => handleRejectFriendRequest(user)}
-            >
-              Reject
-            </Button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </>
   );
 };
